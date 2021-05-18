@@ -33,8 +33,8 @@ Functionality for swapping optimizer tensors to/from (NVMe) storage devices.
 using namespace std;
 using namespace std::chrono;
 
-#define DEBUG_DS_AIO_PERF 0
-#define DEBUG_DS_AIO_SUBMIT_PERF 0
+#define DEBUG_DS_AIO_PERF 1
+#define DEBUG_DS_AIO_SUBMIT_PERF 1
 
 static const std::string c_library_name = "deepspeed_aio";
 
@@ -117,6 +117,8 @@ static int _do_io_complete(const long long int min_completes,
         aio_ctxt->_io_ctxt, min_completes, max_completes, aio_ctxt->_io_events.data(), nullptr);
     reap_times.push_back(std::chrono::high_resolution_clock::now() - start_time);
 
+    std::cout << c_library_name << ": num_complete = " << n_completes << ", and min_completes = " << min_completes << ", and max_completes = " << max_completes << std::endl;
+
     assert(n_completes >= min_completes);
     return n_completes;
 }
@@ -151,6 +153,8 @@ void do_aio_operation_sequential(const bool read_op,
             min(static_cast<long long>(aio_ctxt->_queue_depth), (num_io_blocks - iocb_index));
         const auto num_bytes = min(max_queue_bytes, (xfer_ctxt->_num_bytes - start_offset));
         prep_ctxt.prep_iocbs(n_iocbs, num_bytes, start_buffer, start_offset);
+
+        std:cout << c_library_name << ": DBG:  prep_iocbs() with n_iocbs = " << n_iocbs << ", num_bytes = " << num_bytes << std::endl;
 
         if (config->_single_submit) {
             _do_io_submit_singles(n_iocbs, iocb_index, aio_ctxt, submit_times);
