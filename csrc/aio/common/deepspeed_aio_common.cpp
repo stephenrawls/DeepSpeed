@@ -96,13 +96,17 @@ static void _do_io_submit_block(const long long int n_iocbs,
     const auto submit_ret = io_submit(aio_ctxt->_io_ctxt, n_iocbs, aio_ctxt->_iocbs.data());
     submit_times.push_back(std::chrono::high_resolution_clock::now() - st);
 #if DEBUG_DS_AIO_SUBMIT_PERF
-    printf("submit(usec) %f io_index=%lld nr=%lld buf=%p len=%lu off=%llu \n",
-           submit_times.back().count() * 1e6,
-           iocb_index,
-           n_iocbs,
-           aio_ctxt->_iocbs[0]->u.c.buf,
-           aio_ctxt->_iocbs[0]->u.c.nbytes,
-           aio_ctxt->_iocbs[0]->u.c.offset);
+    std::cout << "DBG:  submit_ret in do_io_submit_block == " << submit_ret << std::endl;
+    for (int i = 0; i < n_iocbs; ++i) {
+      printf("iocb %d:  submit(usec) %f io_index=%lld nr=%lld buf=%p len=%lu off=%llu \n",
+	     i,
+	     submit_times.back().count() * 1e6,
+	     iocb_index,
+	     n_iocbs,
+	     aio_ctxt->_iocbs[i]->u.c.buf,
+	     aio_ctxt->_iocbs[i]->u.c.nbytes,
+	     aio_ctxt->_iocbs[i]->u.c.offset);
+    }
 #endif
     assert(submit_ret > 0);
 }
@@ -212,7 +216,7 @@ void do_aio_operation_overlap(const bool read_op,
     auto start = std::chrono::high_resolution_clock::now();
     while (true) {
         const auto n_iocbs = io_gen.prep_iocbs(request_iocbs - n_pending_iocbs, &aio_ctxt->_iocbs);
-	std::cout << "DBG: n_iocbs = " << n_iocbs << "(request_iocbs = " << request_iocbs << ", n_pending_iocbs = " << n_pending_iocbs << ")" << std:endl;
+	std::cout << "DBG: n_iocbs = " << n_iocbs << "(request_iocbs = " << request_iocbs << ", n_pending_iocbs = " << n_pending_iocbs << ")" << std::endl;
         if (n_iocbs > 0) {
             if (config->_single_submit) {
                 _do_io_submit_singles(
@@ -231,7 +235,7 @@ void do_aio_operation_overlap(const bool read_op,
         const auto n_complete =
             _do_io_complete(min_completes, n_pending_iocbs, aio_ctxt, reap_times);
 	std::cout << "DBG: n_pending_iocbs had increased to " << n_pending_iocbs << ", but after completion of " << n_complete
-		  << " iocbs, now is: " << (n_pending_iocbs - n_complete) << std::end;
+		  << " iocbs, now is: " << (n_pending_iocbs - n_complete) << std::endl;
         n_pending_iocbs -= n_complete;
     }
 
