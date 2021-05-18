@@ -154,7 +154,7 @@ void do_aio_operation_sequential(const bool read_op,
         const auto num_bytes = min(max_queue_bytes, (xfer_ctxt->_num_bytes - start_offset));
         prep_ctxt.prep_iocbs(n_iocbs, num_bytes, start_buffer, start_offset);
 
-        std:cout << c_library_name << ": DBG:  prep_iocbs() with n_iocbs = " << n_iocbs << ", num_bytes = " << num_bytes << std::endl;
+        std:cout << c_library_name << ": DBG(do_aio_operation_sequential):  prep_iocbs() with n_iocbs = " << n_iocbs << ", num_bytes = " << num_bytes << std::endl;
 
         if (config->_single_submit) {
             _do_io_submit_singles(n_iocbs, iocb_index, aio_ctxt, submit_times);
@@ -212,6 +212,7 @@ void do_aio_operation_overlap(const bool read_op,
     auto start = std::chrono::high_resolution_clock::now();
     while (true) {
         const auto n_iocbs = io_gen.prep_iocbs(request_iocbs - n_pending_iocbs, &aio_ctxt->_iocbs);
+	std::cout << "DBG: n_iocbs = " << n_iocbs << "(request_iocbs = " << request_iocbs << ", n_pending_iocbs = " << n_pending_iocbs << ")" << std:endl;
         if (n_iocbs > 0) {
             if (config->_single_submit) {
                 _do_io_submit_singles(
@@ -229,6 +230,8 @@ void do_aio_operation_overlap(const bool read_op,
 
         const auto n_complete =
             _do_io_complete(min_completes, n_pending_iocbs, aio_ctxt, reap_times);
+	std::cout << "DBG: n_pending_iocbs had increased to " << n_pending_iocbs << ", but after completion of " << n_complete
+		  << " iocbs, now is: " << (n_pending_iocbs - n_complete) << std::end;
         n_pending_iocbs -= n_complete;
     }
 
